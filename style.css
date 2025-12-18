@@ -1,0 +1,212 @@
+/* -----------------------------------------------------
+   GLOBAL BACKGROUND
+----------------------------------------------------- */
+body, .stApp {
+    background-color: #FFFFFF !important;      /* ดำเข้ม */
+    background-image: radial-gradient(circle at top, #1a1a2e, #0a0a0f);
+    color: #33FFFF !important;
+}
+
+/* -----------------------------------------------------
+   TITLE STYLE
+----------------------------------------------------- */
+h1, h2, h3, h4 {
+    color: #b19cff !important;
+    text-shadow: 0px 0px 8px rgba(180, 120, 255, 0.8);
+    font-weight: 700;
+}
+
+/* -----------------------------------------------------
+   INPUT BOX
+----------------------------------------------------- */
+/* -----------------------------------------------------
+   INPUT LABEL (ชื่อกลุ่ม / ห้องเรียน) ให้เป็นสีขาว
+----------------------------------------------------- */
+div[data-testid="stTextInput"] label,
+div[data-testid="stTextInput"] label span,
+div[data-testid="stTextInput"] label p {
+    color: #ffffff !important;
+}
+div[data-testid="stNumberInput"] label,
+div[data-testid="stNumberInput"] label span,
+div[data-testid="stNumberInput"] label p {
+    color: #ffffff !important;
+}
+
+.stTextInput > div > div > input {
+    background-color: #181825 !important;
+    color: #ffffff !important;
+    border: 1px solid #6a5acd !important;
+    border-radius: 10px !important;
+}
+
+/* -----------------------------------------------------
+   BUTTON
+----------------------------------------------------- */
+.stButton > button {
+    background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.6rem 1.2rem !important;
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+    transition: 0.3s;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #8a2be2, #6a5acd) !important;
+    transform: scale(1.05);
+}
+
+/* -----------------------------------------------------
+   SUCCESS / ERROR BOXES
+----------------------------------------------------- */
+.stAlert {
+    border-radius: 10px !important;
+}
+
+div[data-baseweb="notification"] {
+    background-color: #1e1e2e !important;
+    border-left: 4px solid #6a5acd !important;
+    color: white !important;
+}
+
+/* -----------------------------------------------------
+   SIDEBAR
+----------------------------------------------------- */
+.css-1d391kg, .css-1lcbmhc {
+    background-color: #111 !important;
+}
+/* =========================
+   EXPANDER (กล่องดาวน์โหลด) ให้เป็นโทนเข้ม
+========================= */
+
+/* กล่องรวมของ Expander */
+div[data-testid="stExpander"] details {
+  background: #181825 !important;
+  border: 1px solid #6a5acd !important;
+  border-radius: 12px !important;
+}
+
+/* แถบหัว Expander (ที่กดเปิด-ปิด) */
+div[data-testid="stExpander"] summary {
+  background: #181825 !important;
+  border-radius: 12px !important;
+}
+
+/* ข้อความบนแถบหัว Expander */
+div[data-testid="stExpander"] summary p,
+div[data-testid="stExpander"] summary span {
+  color: #ffffff !important;
+}
+
+/* พื้นที่เนื้อหาด้านใน Expander */
+div[data-testid="stExpander"] div[role="region"] {
+  background: #181825 !important;
+  border-top: 1px solid #2a2d3a !important;
+  padding: 0.75rem 1rem !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* ปุ่มดาวน์โหลดใน expander ให้เข้ากับธีม */
+div[data-testid="stExpander"] .stDownloadButton > button,
+div[data-testid="stExpander"] div[data-testid="stDownloadButton"] > button {
+  background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+
+div[data-testid="stExpander"] .stDownloadButton > button:hover,
+div[data-testid="stExpander"] div[data-testid="stDownloadButton"] > button:hover {
+  filter: brightness(1.08);
+}
+/* =========================
+   FIX: EXPANDER + DOWNLOAD (ตัดพื้นขาว)
+========================= */
+
+/* กล่อง expander ทั้งชุด */
+div[data-testid="stExpander"] {
+  background: transparent !important;
+}
+
+/* ตัว details/summary ของ expander (กันเวอร์ชันที่มี div ซ้อน) */
+div[data-testid="stExpander"] details,
+div[data-testid="stExpander"] details > summary,
+div[data-testid="stExpander"] details > summary > div {
+  background-color: #181825 !important;
+  border: 1px solid #6a5acd !important;
+  border-radius: 12px !important;
+}
+
+/* สีตัวอักษร/ไอคอนบนหัว expander */
+div[data-testid="stExpander"] summary,
+div[data-testid="stExpander"] summary * {
+  color: #ffffff !important;
+}
+
+/* เนื้อหาด้านใน expander (ที่เคยเป็นพื้นขาว) */
+div[data-testid="stExpander"] div[role="region"],
+div[data-testid="stExpander"] div[role="region"] > div {
+  background-color: #181825 !important;
+  color: #ffffff !important;
+  border-top: 1px solid #2a2d3a !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* ปุ่มดาวน์โหลด (ครอบให้ตรงกับ DOM จริงของ Streamlit) */
+div[data-testid="stDownloadButton"] button,
+div[data-testid="stExpander"] div[data-testid="stDownloadButton"] button {
+  background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+
+div[data-testid="stDownloadButton"] button:hover,
+div[data-testid="stExpander"] div[data-testid="stDownloadButton"] button:hover {
+  filter: brightness(1.08);
+}
+
+h2.stage-title{
+  white-space: nowrap !important;                 /* บังคับไม่ให้ขึ้นบรรทัดใหม่ */
+  font-size: clamp(1.3rem, 2.6vw, 2.1rem) !important;  /* ปรับขนาดให้พอดีหน้าจอ */
+  line-height: 1.2 !important;
+}
+a.home-link-btn{
+  display:inline-block;
+  background: linear-gradient(135deg, #6a5acd, #8a2be2);
+  color:#fff !important;
+  text-decoration:none !important;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  border: 2px solid #9b5cff;
+  font-weight: 600;
+}
+
+a.home-link-btn:hover{
+  filter: brightness(1.08);
+  transform: scale(1.02);
+}
+
+/* Number input ให้โทนเข้มเหมือน TextInput */
+div[data-testid="stNumberInput"] input {
+  background-color: #181825 !important;
+  color: #ffffff !important;
+  border: 1px solid #6a5acd !important;
+  border-radius: 10px !important;
+}
+
+/* ปุ่ม +/- ของ number input ให้เข้มขึ้น (กันปุ่มขาว) */
+div[data-testid="stNumberInput"] button {
+  background-color: #1e1e2e !important;
+  color: #ffffff !important;
+  border: 1px solid #2a2d3a !important;
+}
+div[data-testid="stAlert"]{
+  padding: 0.5rem 0.8rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.8rem !important;
+}
