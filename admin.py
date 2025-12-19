@@ -48,8 +48,8 @@ if "classroom" in df.columns:
     df = df[df["classroom"].isin(room_filter)]
 
 # --- Show table ---
-st.subheader("📋 ตารางข้อมูลทั้งหมด")
-st.subheader("✅ สรุปแบบ 1 กลุ่ม = 1 แถว (เฉพาะที่ตอบถูก)")
+#st.subheader("📋 ตารางข้อมูลทั้งหมด")
+#st.subheader("✅ สรุปแบบ 1 กลุ่ม = 1 แถว (เฉพาะที่ตอบถูก)")
 
 df2 = df.copy()
 df2["stage"] = pd.to_numeric(df2["stage"], errors="coerce")
@@ -113,4 +113,5 @@ if all(c in df.columns for c in ["stage", "result"]):
 st.subheader("📥 ดาวน์โหลดข้อมูล")
 csv = df.to_csv(index=False).encode("utf-8-sig")
 st.download_button("ดาวน์โหลด CSV", csv, "escape_room_results.csv", "text/csv")
+
 
