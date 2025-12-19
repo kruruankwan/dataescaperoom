@@ -77,9 +77,12 @@ t5 = last[last["stage"] == 5][["group_name", "classroom", "time_used"]].drop_dup
 )
 
 summary = pivot.merge(t5, on=["group_name", "classroom"], how="left")
+
+st.subheader("✅ สรุปแบบ 1 กลุ่ม = 1 แถว (เฉพาะที่ตอบถูก)")
 st.dataframe(summary)
 
-st.dataframe(df)
+# st.dataframe(df)  # <-- คอมเมนต์/ลบทิ้ง เพื่อไม่ให้ตาราง log แสดง
+
 
 # --- Summary ---
 st.subheader("📊 สรุป")
@@ -113,5 +116,6 @@ if all(c in df.columns for c in ["stage", "result"]):
 st.subheader("📥 ดาวน์โหลดข้อมูล")
 csv = df.to_csv(index=False).encode("utf-8-sig")
 st.download_button("ดาวน์โหลด CSV", csv, "escape_room_results.csv", "text/csv")
+
 
 
