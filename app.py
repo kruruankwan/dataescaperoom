@@ -58,6 +58,22 @@ def download_csv_button(path: str, label: str):
         st.warning(f"ไม่พบไฟล์สำหรับดาวน์โหลด: {path}")
 
 # -------------------------------------------------
+# ✅ ADD: RESET ANSWER + GO NEXT STAGE
+# (ใส่ตรงนี้ได้เลย หลังฟังก์ชันดาวน์โหลด)
+# -------------------------------------------------
+def reset_answer(stage: int):
+    """ลบค่าช่องกรอกคำตอบของ stage นั้น ๆ ออกจาก session_state"""
+    st.session_state.pop(f"answer_{stage}", None)
+
+def go_stage(next_stage: int, balloons: bool = True):
+    """เปลี่ยนด่าน + รีเซ็ทคำตอบด่านถัดไป + (ถ้าต้องการ) ตั้งธงลูกโป่ง"""
+    reset_answer(next_stage)
+    if balloons:
+        st.session_state.show_balloons = True
+    st.session_state.stage = next_stage
+    st.rerun()
+
+# -------------------------------------------------
 # SESSION STATE
 # -------------------------------------------------
 if "stage" not in st.session_state:
@@ -141,6 +157,11 @@ if st.session_state.stage == 0:
             st.session_state.stage = 1
             st.session_state.game_completed = False
             st.session_state.completed_time = ""
+
+            # ✅ รีเซ็ทคำตอบทุกด่านตอนเริ่มเกม
+            for i in range(1, 6):
+                reset_answer(i)
+
             st.rerun()
 
 # -------------------------------------------------
@@ -155,7 +176,9 @@ elif st.session_state.stage == 1:
         download_csv_button("1_sales_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 1")
 
     correct = df["Sales"].max()
-    user = st.number_input("กรอกคำตอบ", step=1)
+
+    # ✅ ใส่ key แยกด่าน
+    user = st.number_input("กรอกคำตอบ", step=1, key="answer_1")
 
     if st.button("ตรวจคำตอบ"):
         result = "ถูกต้อง" if user == correct else "ผิด"
@@ -163,9 +186,7 @@ elif st.session_state.stage == 1:
 
         if result == "ถูกต้อง":
             st.success("🎉 ถูกต้อง! ไปด่านที่ 2 →")
-            st.session_state.show_balloons = True
-            st.session_state.stage = 2
-            st.rerun()
+            go_stage(2, balloons=True)
         else:
             st.error("❌ คำตอบผิด")
 
@@ -184,7 +205,9 @@ elif st.session_state.stage == 2:
         download_csv_button("2_exercise_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 2")
 
     correct = (df["ExerciseMinutes"]).min()
-    user = st.number_input("กรอกคำตอบ", step=1)
+
+    # ✅ ใส่ key แยกด่าน
+    user = st.number_input("กรอกคำตอบ", step=1, key="answer_2")
 
     if st.button("ตรวจคำตอบ"):
         result = "ถูกต้อง" if user == correct else "ผิด"
@@ -192,9 +215,7 @@ elif st.session_state.stage == 2:
 
         if result == "ถูกต้อง":
             st.success("🎉 เก่งมาก! ไปด่านที่ 3 →")
-            st.session_state.show_balloons = True
-            st.session_state.stage = 3
-            st.rerun()
+            go_stage(3, balloons=True)
         else:
             st.error("❌ คำตอบผิด")
 
@@ -210,7 +231,9 @@ elif st.session_state.stage == 3:
         download_csv_button("3_electricity_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 3")
 
     correct = df["Units"].max()
-    user = st.number_input("กรอกคำตอบ", step=1)
+
+    # ✅ ใส่ key แยกด่าน
+    user = st.number_input("กรอกคำตอบ", step=1, key="answer_3")
 
     if st.button("ตรวจคำตอบ"):
         result = "ถูกต้อง" if abs(user - correct) < 0.01 else "ผิด"
@@ -218,9 +241,7 @@ elif st.session_state.stage == 3:
 
         if result == "ถูกต้อง":
             st.success("🎉 ดีมาก! ไปด่าน 4 →")
-            st.session_state.show_balloons = True
-            st.session_state.stage = 4
-            st.rerun()
+            go_stage(4, balloons=True)
         else:
             st.error("❌ คำตอบไม่ถูก")
 
@@ -239,7 +260,9 @@ elif st.session_state.stage == 4:
         download_csv_button("4_web_traffic_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 4")
 
     correct = df["Visitors"].min()
-    user = st.number_input("กรอกจำนวนคน", step=1)
+
+    # ✅ ใส่ key แยกด่าน
+    user = st.number_input("กรอกจำนวนคน", step=1, key="answer_4")
 
     if st.button("ตรวจคำตอบ"):
         result = "ถูกต้อง" if user == correct else "ผิด"
@@ -247,9 +270,7 @@ elif st.session_state.stage == 4:
 
         if result == "ถูกต้อง":
             st.success("🎉 ยอดเยี่ยม! ไปด่านสุดท้าย →")
-            st.session_state.show_balloons = True
-            st.session_state.stage = 5
-            st.rerun()
+            go_stage(5, balloons=True)
         else:
             st.error("❌ คำตอบผิด")
 
@@ -265,11 +286,12 @@ elif st.session_state.stage == 5:
         download_csv_button("5_internet_survey_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
 
     correct = round(df["HoursUsed"].mean(), 2)
-    user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f")
+
+    # ✅ ใส่ key แยกด่าน
+    user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f", key="answer_5")
 
     HOME_URL = "https://ev-car01.my.canva.site/dataescaperoom"
 
-    # ถ้าจบเกมแล้ว แสดงผลจบเกม + ปุ่มกลับหน้าหลัก
     if st.session_state.game_completed:
         st.success(f"🎉 ผ่านครบทุกด่าน! ใช้เวลา {st.session_state.completed_time}")
         st.markdown(
