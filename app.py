@@ -156,7 +156,8 @@ elif st.session_state.stage == 1:
         log_to_sheet(st.session_state.group_name, st.session_state.room, 1, user, result)
 
         if result == "ถูกต้อง":
-            st.success("🎉 ถูกต้อง! ไปด่านถัดไป →")
+            st.success("🎉 ถูกต้อง! ไปด่านที่ 2 →")
+            st.balloons()
             st.session_state.stage = 2
             st.rerun()
         else:
@@ -186,6 +187,7 @@ elif st.session_state.stage == 2:
 
         if result == "ถูกต้อง":
             st.success("🎉 เก่งมาก! ไปด่านที่ 3 →")
+            st.balloons()
             st.session_state.stage = 3
             st.rerun()
         else:
@@ -242,6 +244,7 @@ elif st.session_state.stage == 4:
         if result == "ถูกต้อง":
             st.success("🎉 ยอดเยี่ยม! ไปด่านสุดท้าย →")
             st.session_state.stage = 5
+            st.balloons()
             st.rerun()
         else:
             st.error("❌ คำตอบผิด")
@@ -301,4 +304,5 @@ elif st.session_state.stage == 5:
             """,
             unsafe_allow_html=True
         )
+
 
