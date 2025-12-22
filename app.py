@@ -157,7 +157,7 @@ elif st.session_state.stage == 1:
 
         if result == "ถูกต้อง":
             st.success("🎉 ถูกต้อง! ไปด่านที่ 2 →")
-            st.balloons()
+            st.session_state.show_balloons = True
             st.session_state.stage = 2
             st.rerun()
         else:
@@ -304,5 +304,6 @@ elif st.session_state.stage == 5:
             """,
             unsafe_allow_html=True
         )
+
 
 
