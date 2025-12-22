@@ -259,7 +259,7 @@ elif st.session_state.stage == 5:
         download_csv_button("5_internet_survey_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
 
     correct = round(df["HoursUsed"].mean(), 2)
-    user = st.number_input("กรอกคำตอบ เช่น 4.74", format="%.2f")
+    user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f")
 
     HOME_URL = "https://ev-car01.my.canva.site/dataescaperoom"
 
@@ -301,3 +301,4 @@ elif st.session_state.stage == 5:
             """,
             unsafe_allow_html=True
         )
+
