@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from datetime import datetime
 from pathlib import Path
+import base64
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="DATA Escape Room",
@@ -11,38 +12,48 @@ st.set_page_config(
     layout="centered"
 )
 
-# โหลดไฟล์ css
+# -------------------------------------------------
+# LOAD CSS
+# -------------------------------------------------
 with open("style.css", "r", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # -------------------------------------------------
 # CONFIG
 # -------------------------------------------------
-st.markdown('<h1 class="main-title">🔐 DATA Escape Room</h1>', unsafe_allow_html=True)
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwGUE2ANKAkwQcu9ltUpy5MXhPtBtZyY6OXHdruocyvq2yvol1nkqZd6dPYD3kezkjZ/exec"
 
-# -------------------------------------------------
-# FUNCTION : SEND LOG TO GOOGLE SHEET
-# -------------------------------------------------
-def log_to_sheet(group, room, stage, answer, result, time_used=""):
-    payload = {
-        "group_name": (group),
-        "classroom": (room),
-        "stage": int(stage),
-        "answer": answer,
-        "result": (result),
-        "time_used": (time_used)
-    }
+ASSETS = Path("assets")
+SFX_SUCCESS = str(ASSETS / "sfx_success.mp3")
+SFX_FAIL = str(ASSETS / "sfx_fail.mp3")
 
-    try:
-        r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
-        if r.status_code != 200:
-            st.error(f"บันทึกลงชีตไม่สำเร็จ (HTTP {r.status_code}) : {r.text[:200]}")
-            return False
-        return True
-    except Exception as e:
-        st.error(f"บันทึกลงชีตไม่สำเร็จ: {e}")
-        return False
+
+# -------------------------------------------------
+# HELPERS
+# -------------------------------------------------
+def format_time(sec: int) -> str:
+    m = sec // 60
+    s = sec % 60
+    return f"{m} นาที {s} วินาที"
+
+
+def play_sound_autoplay(path_str: str):
+    """
+    เล่นเสียงแบบ autoplay โดยไม่แสดงแถบ player
+    path_str รับเป็น string ได้เลย เช่น "assets/sfx_success.mp3"
+    """
+    path = Path(path_str)
+    if not path.exists():
+        st.warning(f"ไม่พบไฟล์เสียง: {path_str}")
+        return
+
+    b64 = base64.b64encode(path.read_bytes()).decode("utf-8")
+    html = f"""
+    <audio autoplay>
+        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+    </audio>
+    """
+    components.html(html, height=0)
 
 
 def download_csv_button(path: str, label: str):
@@ -57,97 +68,205 @@ def download_csv_button(path: str, label: str):
     else:
         st.warning(f"ไม่พบไฟล์สำหรับดาวน์โหลด: {path}")
 
-# -------------------------------------------------
-# ✅ ADD: RESET ANSWER + GO NEXT STAGE
-# (ใส่ตรงนี้ได้เลย หลังฟังก์ชันดาวน์โหลด)
-# -------------------------------------------------
+
+def log_to_sheet(group, room, stage, answer, result, time_used=""):
+    payload = {
+        "group_name": group,
+        "classroom": room,
+        "stage": int(stage),
+        "answer": answer,
+        "result": result,
+        "time_used": time_used
+    }
+    try:
+        r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+        if r.status_code != 200:
+            st.error(f"บันทึกลงชีตไม่สำเร็จ (HTTP {r.status_code}) : {r.text[:200]}")
+            return False
+        return True
+    except Exception as e:
+        st.error(f"บันทึกลงชีตไม่สำเร็จ: {e}")
+        return False
+
+
 def reset_answer(stage: int):
-    """ลบค่าช่องกรอกคำตอบของ stage นั้น ๆ ออกจาก session_state"""
     st.session_state.pop(f"answer_{stage}", None)
 
-def go_stage(next_stage: int, balloons: bool = True):
-    """เปลี่ยนด่าน + รีเซ็ทคำตอบด่านถัดไป + (ถ้าต้องการ) ตั้งธงลูกโป่ง"""
+
+def unlock_badge(stage: int):
+    st.session_state.badges.add(stage)
+
+
+def stage_card(title: str, mission_html: str, image_file: str):
+    st.markdown(f"""
+    <div class="game-card">
+        <h2>{title}</h2>
+        <p>{mission_html}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    img_path = ASSETS / image_file
+    if img_path.exists():
+        st.image(str(img_path), use_container_width=True)
+    else:
+        st.warning(f"ไม่พบรูป: assets/{image_file}")
+
+
+def auto_next_stage(next_stage: int, delay_sec: float = 1.2):
+    """
+    ไปด่านถัดไปอัตโนมัติหลังหน่วงเวลา
+    (ให้เสียงเริ่มเล่น + ให้ balloons แสดงก่อน)
+    """
+    time.sleep(delay_sec)
     reset_answer(next_stage)
-    if balloons:
-        st.session_state.show_balloons = True
     st.session_state.stage = next_stage
     st.rerun()
+
+
+HINTS = {
+    1: "ใบ้: ดูคอลัมน์ <b>Sales</b> แล้วหา “ค่ามากที่สุด” (max).",
+    2: "ใบ้: ดูคอลัมน์ <b>ExerciseMinutes</b> แล้วหา “ค่าน้อยที่สุด” (min).",
+    3: "ใบ้: ดูคอลัมน์ <b>Units</b> แล้วหา “ค่ามากที่สุด” (max).",
+    4: "ใบ้: ดูคอลัมน์ <b>Visitors</b> แล้วหา “ค่าน้อยที่สุด” (min).",
+    5: "ใบ้: ดูคอลัมน์ <b>HoursUsed</b> แล้วหา “ค่าเฉลี่ย” และปัดทศนิยม 2 ตำแหน่ง (mean + round).",
+}
+
+
+def hint_block(stage: int):
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        if st.button("💡 ขอใบ้", key=f"hint_btn_{stage}"):
+            st.session_state.hints_used.add(stage)
+    with c2:
+        if stage in st.session_state.hints_used:
+            st.info(HINTS.get(stage, ""))
+
+
+def summary_page():
+    st.markdown("""
+    <div class="game-card">
+        <h2>🏁 สรุปผลการเล่น (Mission Complete)</h2>
+        <p>สุดยอด! ผ่านครบทั้ง 5 ด่านแล้ว 🎉</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 🧑‍🤝‍🧑 ข้อมูลทีม")
+    st.write(f"**ชื่อกลุ่ม:** {st.session_state.group_name}")
+    st.write(f"**ห้อง:** {st.session_state.room}")
+    st.write(f"**เวลาที่ใช้:** {st.session_state.completed_time}")
+
+    st.markdown("### 🏆 เหรียญรางวัลที่ได้รับ")
+    cols = st.columns(5)
+    for i in range(1, 6):
+        with cols[i - 1]:
+            badge_path = ASSETS / f"badge{i}.png"
+            if i in st.session_state.badges and badge_path.exists():
+                st.image(str(badge_path), use_container_width=True)
+            else:
+                st.caption(f"ด่าน {i}")
+
+    st.markdown("---")
+
+    if st.button("🔄 เล่นใหม่อีกครั้ง"):
+        st.session_state.stage = 0
+        st.session_state.start_time = None
+        st.session_state.game_completed = False
+        st.session_state.completed_time = ""
+        st.session_state.completed_seconds = 0
+        st.session_state.badges = set()
+        st.session_state.hints_used = set()
+        for i in range(1, 6):
+            reset_answer(i)
+        st.rerun()
+
 
 # -------------------------------------------------
 # SESSION STATE
 # -------------------------------------------------
 if "stage" not in st.session_state:
     st.session_state.stage = 0
-
 if "group_name" not in st.session_state:
     st.session_state.group_name = ""
-
 if "room" not in st.session_state:
     st.session_state.room = ""
-
 if "start_time" not in st.session_state:
     st.session_state.start_time = None
-
 if "game_completed" not in st.session_state:
     st.session_state.game_completed = False
-
-# ✅ เพิ่มธงสำหรับลูกโป่ง + เก็บเวลาเมื่อจบเกม
-if "show_balloons" not in st.session_state:
-    st.session_state.show_balloons = False
-
 if "completed_time" not in st.session_state:
     st.session_state.completed_time = ""
+if "completed_seconds" not in st.session_state:
+    st.session_state.completed_seconds = 0
+if "badges" not in st.session_state:
+    st.session_state.badges = set()
+if "hints_used" not in st.session_state:
+    st.session_state.hints_used = set()
+
 
 # -------------------------------------------------
-# THEME (ดำ–น้ำเงิน–ม่วง)
+# SIDEBAR
 # -------------------------------------------------
-st.markdown("""
-<style>
-    body {
-        background-color: #0d0f1a;
-        color: white;
-    }
-    .stButton>button {
-        background-color: #6a0dad;
-        color: white;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        border: 2px solid #9b5cff;
-    }
-    .stTextInput>div>input {
-        background-color: #1b1e2b;
-        color: #fff;
-    }
-</style>
-""", unsafe_allow_html=True)
+with st.sidebar:
+    logo_sq = ASSETS / "logo_square.png"
+    if logo_sq.exists():
+        st.image(str(logo_sq), use_container_width=True)
+
+    st.markdown("## 🧑‍🤝‍🧑 ทีมผู้เล่น")
+    st.write(f"**กลุ่ม:** {st.session_state.group_name or '-'}")
+    st.write(f"**ห้อง:** {st.session_state.room or '-'}")
+
+    if st.session_state.stage >= 1 and st.session_state.stage <= 5:
+        st.progress(
+            (st.session_state.stage - 1) / 5,
+            text=f"ความคืบหน้า {st.session_state.stage-1}/5 ด่าน"
+        )
+
+    st.markdown("## 🏆 เหรียญที่ได้รับ")
+    cols = st.columns(5)
+    for i in range(1, 6):
+        with cols[i - 1]:
+            badge_path = ASSETS / f"badge{i}.png"
+            if i in st.session_state.badges and badge_path.exists():
+                st.image(str(badge_path), use_container_width=True)
+            else:
+                st.caption(str(i))
+
+    mascot = ASSETS / "mascot.png"
+    if mascot.exists():
+        st.image(str(mascot), use_container_width=True)
+
 
 # -------------------------------------------------
 # HEADER
 # -------------------------------------------------
-st.markdown('<h1 class="sub-title">5 ด่าน ไขรหัสข้อมูล 🔐</h1>', unsafe_allow_html=True)
+logo = ASSETS / "logo.png"
+if logo.exists():
+    st.image(str(logo), use_container_width=True)
 
-# -------------------------------------------------
-# SHOW TIMER
-# -------------------------------------------------
-if st.session_state.start_time:
-    elapsed = int(time.time() - st.session_state.start_time)
-    m = elapsed // 60
-    s = elapsed % 60
-    st.info(f"⏳ เวลาที่ผ่านไป: **{m} นาที {s} วินาที**")
+st.markdown(
+    '<p style="text-align:center; opacity:0.9;">เกมฝึกวิเคราะห์ข้อมูล CSV สำหรับนักเรียน ม.3</p>',
+    unsafe_allow_html=True
+)
 
-# ✅ โชว์ลูกโป่งหลัง rerun แบบเสถียร (ทำครั้งเดียวแล้วปิดธง)
-if st.session_state.show_balloons:
-    st.balloons()
-    st.session_state.show_balloons = False
 
 # -------------------------------------------------
 # PAGE 0 — INPUT INFO
 # -------------------------------------------------
 if st.session_state.stage == 0:
-    st.markdown("### 🧩 กรุณากรอกข้อมูลก่อนเริ่มเกม")
+    st.markdown("""
+    <div class="game-card">
+        <h3>🎮 กติกาเกม</h3>
+        <ul>
+            <li>มีทั้งหมด 5 ด่าน</li>
+            <li>แต่ละด่านใช้ไฟล์ CSV จริง</li>
+            <li>ตอบถูก → ได้เหรียญ → ไปด่านถัดไปอัตโนมัติ</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.session_state.group_name = st.text_input("ชื่อกลุ่ม")
-    st.session_state.room = st.text_input("ห้องเรียน เช่น ม.3/1")
+    st.markdown("### 🧩 กรุณากรอกข้อมูลก่อนเริ่มเกม")
+    st.session_state.group_name = st.text_input("ชื่อกลุ่ม", value=st.session_state.group_name)
+    st.session_state.room = st.text_input("ห้องเรียน เช่น ม.3/1", value=st.session_state.room)
 
     if st.button("เริ่มเกม →"):
         if st.session_state.group_name.strip() == "" or st.session_state.room.strip() == "":
@@ -157,179 +276,201 @@ if st.session_state.stage == 0:
             st.session_state.stage = 1
             st.session_state.game_completed = False
             st.session_state.completed_time = ""
-
-            # ✅ รีเซ็ทคำตอบทุกด่านตอนเริ่มเกม
+            st.session_state.completed_seconds = 0
+            st.session_state.badges = set()
+            st.session_state.hints_used = set()
             for i in range(1, 6):
                 reset_answer(i)
-
             st.rerun()
 
+
 # -------------------------------------------------
-# STAGE 1 — MAX SALES
+# STAGE 1
 # -------------------------------------------------
 elif st.session_state.stage == 1:
-    st.markdown("## 🔎 ด่านที่ 1 : หายอดขายสูงสุด")
+    stage_card(
+        "🔎 ด่านที่ 1 : ปลดล็อกยอดขาย",
+        "<b>ภารกิจ:</b> เปิดไฟล์ CSV แล้วหาค่า <b>Sales</b> ที่มากที่สุด",
+        "stage1.png"
+    )
+    hint_block(1)
 
     df = pd.read_csv("1_sales_50.csv")
-
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
         download_csv_button("1_sales_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 1")
 
     correct = df["Sales"].max()
-
-    # ✅ ใส่ key แยกด่าน
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_1")
 
-    if st.button("ตรวจคำตอบ"):
+    if st.button("ตรวจคำตอบ", key="check_1"):
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 1, user, result)
 
         if result == "ถูกต้อง":
-            st.success("🎉 ถูกต้อง! ไปด่านที่ 2 →")
-            go_stage(2, balloons=True)
+            unlock_badge(1)
+            play_sound_autoplay(SFX_SUCCESS)
+            st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
+            st.balloons()
+            auto_next_stage(2, delay_sec=1.2)
         else:
-            st.error("❌ คำตอบผิด")
+            play_sound_autoplay(SFX_FAIL)
+            st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
+
 
 # -------------------------------------------------
-# STAGE 2 — EXERCISE Min
+# STAGE 2
 # -------------------------------------------------
 elif st.session_state.stage == 2:
-    st.markdown(
-        '<h2 class="stage-title">💪 ด่านที่ 2 : คนที่ออกกำลังกายน้อยที่สุดกี่วัน</h2>',
-        unsafe_allow_html=True
+    stage_card(
+        "💪 ด่านที่ 2 : ภารกิจออกกำลัง",
+        "<b>ภารกิจ:</b> เปิดไฟล์ CSV แล้วหาค่า <b>ExerciseMinutes</b> ที่น้อยที่สุด",
+        "stage2.png"
     )
+    hint_block(2)
 
     df = pd.read_csv("2_exercise_50.csv")
-
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
         download_csv_button("2_exercise_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 2")
 
-    correct = (df["ExerciseMinutes"]).min()
-
-    # ✅ ใส่ key แยกด่าน
+    correct = df["ExerciseMinutes"].min()
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_2")
 
-    if st.button("ตรวจคำตอบ"):
+    if st.button("ตรวจคำตอบ", key="check_2"):
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 2, user, result)
 
         if result == "ถูกต้อง":
-            st.success("🎉 เก่งมาก! ไปด่านที่ 3 →")
-            go_stage(3, balloons=True)
+            unlock_badge(2)
+            play_sound_autoplay(SFX_SUCCESS)
+            st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
+            st.balloons()
+            auto_next_stage(3, delay_sec=1.2)
         else:
-            st.error("❌ คำตอบผิด")
+            play_sound_autoplay(SFX_FAIL)
+            st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
+
 
 # -------------------------------------------------
-# STAGE 3 — MAX ELECTRICITY
+# STAGE 3
 # -------------------------------------------------
 elif st.session_state.stage == 3:
-    st.markdown("## 🌐 ด่านที่ 3 : หน่วยไฟฟ้าที่ใช้สูงสุด ")
+    stage_card(
+        "⚡ ด่านที่ 3 : ภารกิจไฟฟ้า",
+        "<b>ภารกิจ:</b> เปิดไฟล์ CSV แล้วหาค่า <b>Units</b> ที่มากที่สุด",
+        "stage3.png"
+    )
+    hint_block(3)
 
     df = pd.read_csv("3_electricity_50.csv")
-
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
         download_csv_button("3_electricity_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 3")
 
     correct = df["Units"].max()
-
-    # ✅ ใส่ key แยกด่าน
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_3")
 
-    if st.button("ตรวจคำตอบ"):
+    if st.button("ตรวจคำตอบ", key="check_3"):
         result = "ถูกต้อง" if abs(user - correct) < 0.01 else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 3, user, result)
 
         if result == "ถูกต้อง":
-            st.success("🎉 ดีมาก! ไปด่าน 4 →")
-            go_stage(4, balloons=True)
+            unlock_badge(3)
+            play_sound_autoplay(SFX_SUCCESS)
+            st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
+            st.balloons()
+            auto_next_stage(4, delay_sec=1.2)
         else:
-            st.error("❌ คำตอบไม่ถูก")
+            play_sound_autoplay(SFX_FAIL)
+            st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
+
 
 # -------------------------------------------------
-# STAGE 4 — MIN WEBSITE VISITORS
+# STAGE 4
 # -------------------------------------------------
 elif st.session_state.stage == 4:
-    st.markdown(
-        '<h2 class="stage-title">📊 ด่านที่ 4 : หาจำนวนคนที่เข้าเว็บน้อยที่สุด</h2>',
-        unsafe_allow_html=True
+    stage_card(
+        "🌐 ด่านที่ 4 : ภารกิจเว็บทราฟฟิก",
+        "<b>ภารกิจ:</b> เปิดไฟล์ CSV แล้วหาค่า <b>Visitors</b> ที่น้อยที่สุด",
+        "stage4.png"
     )
+    hint_block(4)
 
     df = pd.read_csv("4_web_traffic_50.csv")
-
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
         download_csv_button("4_web_traffic_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 4")
 
     correct = df["Visitors"].min()
-
-    # ✅ ใส่ key แยกด่าน
     user = st.number_input("กรอกจำนวนคน", step=1, key="answer_4")
 
-    if st.button("ตรวจคำตอบ"):
+    if st.button("ตรวจคำตอบ", key="check_4"):
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 4, user, result)
 
         if result == "ถูกต้อง":
-            st.success("🎉 ยอดเยี่ยม! ไปด่านสุดท้าย →")
-            go_stage(5, balloons=True)
+            unlock_badge(4)
+            play_sound_autoplay(SFX_SUCCESS)
+            st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
+            st.balloons()
+            auto_next_stage(5, delay_sec=1.2)
         else:
-            st.error("❌ คำตอบผิด")
+            play_sound_autoplay(SFX_FAIL)
+            st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
+
 
 # -------------------------------------------------
-# STAGE 5 — AVERAGE INTERNET HOURS
+# STAGE 5
 # -------------------------------------------------
 elif st.session_state.stage == 5:
-    st.markdown("## ⚡ ด่านที่ 5 : ค่าเฉลี่ยเวลาการใช้อินเทอร์เน็ต (ทศนิยม 2 ตำแหน่ง)")
+    stage_card(
+        "📶 ด่านที่ 5 : ภารกิจ Wi-Fi",
+        "<b>ภารกิจ:</b> หา <b>ค่าเฉลี่ย HoursUsed</b> และปัดทศนิยม 2 ตำแหน่ง",
+        "stage5.png"
+    )
+    hint_block(5)
 
     df = pd.read_csv("5_internet_survey_50.csv")
-
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
         download_csv_button("5_internet_survey_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
 
     correct = round(df["HoursUsed"].mean(), 2)
-
-    # ✅ ใส่ key แยกด่าน
     user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f", key="answer_5")
 
-    HOME_URL = "https://ev-car01.my.canva.site/dataescaperoom"
+    if st.button("ตรวจคำตอบ", key="check_5"):
+        finish = time.time()
+        total_sec = int(finish - st.session_state.start_time)
+        formatted = format_time(total_sec)
 
-    if st.session_state.game_completed:
-        st.success(f"🎉 ผ่านครบทุกด่าน! ใช้เวลา {st.session_state.completed_time}")
-        st.markdown(
-            f"""
-            <div style="margin-top: 18px;">
-                <a class="home-link-btn" href="{HOME_URL}" target="_blank" rel="noopener noreferrer">
-                  🏠 กลับหน้าหลัก
-                </a>
-            </div>
-            """,
-            unsafe_allow_html=True
+        result = "ถูกต้อง" if float(user) == correct else "ผิด"
+
+        ok = log_to_sheet(
+            st.session_state.group_name,
+            st.session_state.room,
+            5,
+            float(user),
+            result,
+            formatted
         )
-    else:
-        if st.button("ตรวจคำตอบ"):
-            finish = time.time()
-            total_sec = int(finish - st.session_state.start_time)
-            m = total_sec // 60
-            s = total_sec % 60
-            formatted = f"{m} นาที {s} วินาที"
 
-            result = "ถูกต้อง" if float(user) == correct else "ผิด"
+        if result == "ถูกต้อง":
+            unlock_badge(5)
+            play_sound_autoplay(SFX_SUCCESS)
+            st.success("🎉 ถูกต้อง! ผ่านครบทุกด่านแล้ว 🎉 กำลังไปหน้าสรุป…")
+            st.balloons()
 
-            ok = log_to_sheet(
-                st.session_state.group_name,
-                st.session_state.room,
-                5,
-                float(user),
-                result,
-                formatted
-            )
+            # บันทึกเวลาจบเกม
+            st.session_state.completed_seconds = total_sec
+            st.session_state.completed_time = formatted
+            st.session_state.game_completed = True
 
-            if result == "ถูกต้อง" and ok:
-                st.session_state.completed_time = formatted
-                st.session_state.game_completed = True
-                st.session_state.show_balloons = True
-                st.rerun()
-            elif result == "ถูกต้อง" and not ok:
-                st.warning("ตอบถูกแล้ว แต่บันทึกลง Google Sheet ไม่สำเร็จ (ดูข้อความ error ด้านบน)")
-            else:
-                st.error("❌ คำตอบผิด")
+            # ไปหน้า Summary (Stage 6)
+            auto_next_stage(6, delay_sec=1.3)
 
+        else:
+            play_sound_autoplay(SFX_FAIL)
+            st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
+
+
+# -------------------------------------------------
+# SUMMARY PAGE (STAGE 6)
+# -------------------------------------------------
+elif st.session_state.stage == 6:
+    summary_page()
