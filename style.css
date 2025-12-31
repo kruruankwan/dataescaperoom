@@ -1,212 +1,198 @@
-/* -----------------------------------------------------
-   GLOBAL BACKGROUND
------------------------------------------------------ */
-body, .stApp {
-    background-color: #FFFFFF !important;      /* ดำเข้ม */
-    background-image: radial-gradient(circle at top, #1a1a2e, #0a0a0f);
-    color: #33FFFF !important;
+/* =====================================================
+   DATA Escape Room — Unified Theme (App + Admin)
+===================================================== */
+
+:root{
+  --bg:#0d0f1a;
+  --bg2:#0a0a0f;
+
+  --panel:#121528;
+  --panel2:#181825;
+
+  --text:#f2f4ff;
+  --muted:rgba(242,244,255,.78);
+
+  --primary:#6a5acd;
+  --primary2:#8a2be2;
+  --accent:#9b5cff;
+
+  --border:rgba(155,92,255,.35);
+  --border2:rgba(255,255,255,.10);
+
+  --shadow:0 10px 30px rgba(0,0,0,.28);
 }
 
-/* -----------------------------------------------------
-   TITLE STYLE
------------------------------------------------------ */
-h1, h2, h3, h4 {
-    color: #b19cff !important;
-    text-shadow: 0px 0px 8px rgba(180, 120, 255, 0.8);
-    font-weight: 700;
+/* -------- GLOBAL -------- */
+html, body, .stApp{
+  background-color: var(--bg) !important;
+  background-image: radial-gradient(circle at top, #1a1a2e, var(--bg2)) !important;
+  color: var(--text) !important;
 }
 
-/* -----------------------------------------------------
-   INPUT BOX
------------------------------------------------------ */
-/* -----------------------------------------------------
-   INPUT LABEL (ชื่อกลุ่ม / ห้องเรียน) ให้เป็นสีขาว
------------------------------------------------------ */
+.block-container{
+  padding-top: 1.1rem;
+  padding-bottom: 2rem;
+}
+
+/* -------- TYPOGRAPHY -------- */
+h1, h2, h3, h4{
+  color: #c9b8ff !important;
+  text-shadow: 0px 0px 8px rgba(180,120,255,.55);
+  font-weight: 800;
+}
+p, li, span, label, div{ color: var(--text) !important; }
+
+.stCaption,
+[data-testid="stCaptionContainer"]{
+  color: var(--muted) !important;
+}
+
+/* -------- SIDEBAR -------- */
+[data-testid="stSidebar"]{
+  background: #0b0e18 !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+}
+[data-testid="stSidebar"] *{ color: var(--text) !important; }
+
+/* -------- INPUTS -------- */
 div[data-testid="stTextInput"] label,
-div[data-testid="stTextInput"] label span,
-div[data-testid="stTextInput"] label p {
-    color: #ffffff !important;
-}
+div[data-testid="stTextInput"] label * ,
 div[data-testid="stNumberInput"] label,
-div[data-testid="stNumberInput"] label span,
-div[data-testid="stNumberInput"] label p {
-    color: #ffffff !important;
+div[data-testid="stNumberInput"] label *{
+  color: var(--text) !important;
 }
 
-.stTextInput > div > div > input {
-    background-color: #181825 !important;
-    color: #ffffff !important;
-    border: 1px solid #6a5acd !important;
-    border-radius: 10px !important;
-}
-
-/* -----------------------------------------------------
-   BUTTON
------------------------------------------------------ */
-.stButton > button {
-    background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
-    color: white !important;
-    border: none !important;
-    padding: 0.6rem 1.2rem !important;
-    border-radius: 10px !important;
-    font-size: 1rem !important;
-    transition: 0.3s;
-}
-
-.stButton > button:hover {
-    background: linear-gradient(135deg, #8a2be2, #6a5acd) !important;
-    transform: scale(1.05);
-}
-
-/* -----------------------------------------------------
-   SUCCESS / ERROR BOXES
------------------------------------------------------ */
-.stAlert {
-    border-radius: 10px !important;
-}
-
-div[data-baseweb="notification"] {
-    background-color: #1e1e2e !important;
-    border-left: 4px solid #6a5acd !important;
-    color: white !important;
-}
-
-/* -----------------------------------------------------
-   SIDEBAR
------------------------------------------------------ */
-.css-1d391kg, .css-1lcbmhc {
-    background-color: #111 !important;
-}
-/* =========================
-   EXPANDER (กล่องดาวน์โหลด) ให้เป็นโทนเข้ม
-========================= */
-
-/* กล่องรวมของ Expander */
-div[data-testid="stExpander"] details {
-  background: #181825 !important;
-  border: 1px solid #6a5acd !important;
-  border-radius: 12px !important;
-}
-
-/* แถบหัว Expander (ที่กดเปิด-ปิด) */
-div[data-testid="stExpander"] summary {
-  background: #181825 !important;
-  border-radius: 12px !important;
-}
-
-/* ข้อความบนแถบหัว Expander */
-div[data-testid="stExpander"] summary p,
-div[data-testid="stExpander"] summary span {
-  color: #ffffff !important;
-}
-
-/* พื้นที่เนื้อหาด้านใน Expander */
-div[data-testid="stExpander"] div[role="region"] {
-  background: #181825 !important;
-  border-top: 1px solid #2a2d3a !important;
-  padding: 0.75rem 1rem !important;
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
-}
-
-/* ปุ่มดาวน์โหลดใน expander ให้เข้ากับธีม */
-div[data-testid="stExpander"] .stDownloadButton > button,
-div[data-testid="stExpander"] div[data-testid="stDownloadButton"] > button {
-  background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
-  color: #ffffff !important;
-  border: none !important;
+.stTextInput input,
+div[data-testid="stNumberInput"] input{
+  background-color: var(--panel2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--primary) !important;
   border-radius: 10px !important;
 }
-
-div[data-testid="stExpander"] .stDownloadButton > button:hover,
-div[data-testid="stExpander"] div[data-testid="stDownloadButton"] > button:hover {
-  filter: brightness(1.08);
-}
-/* =========================
-   FIX: EXPANDER + DOWNLOAD (ตัดพื้นขาว)
-========================= */
-
-/* กล่อง expander ทั้งชุด */
-div[data-testid="stExpander"] {
-  background: transparent !important;
+.stTextInput input:focus,
+div[data-testid="stNumberInput"] input:focus{
+  border: 1px solid var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(155,92,255,.22) !important;
 }
 
-/* ตัว details/summary ของ expander (กันเวอร์ชันที่มี div ซ้อน) */
-div[data-testid="stExpander"] details,
-div[data-testid="stExpander"] details > summary,
-div[data-testid="stExpander"] details > summary > div {
-  background-color: #181825 !important;
-  border: 1px solid #6a5acd !important;
-  border-radius: 12px !important;
-}
-
-/* สีตัวอักษร/ไอคอนบนหัว expander */
-div[data-testid="stExpander"] summary,
-div[data-testid="stExpander"] summary * {
-  color: #ffffff !important;
-}
-
-/* เนื้อหาด้านใน expander (ที่เคยเป็นพื้นขาว) */
-div[data-testid="stExpander"] div[role="region"],
-div[data-testid="stExpander"] div[role="region"] > div {
-  background-color: #181825 !important;
-  color: #ffffff !important;
-  border-top: 1px solid #2a2d3a !important;
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
-}
-
-/* ปุ่มดาวน์โหลด (ครอบให้ตรงกับ DOM จริงของ Streamlit) */
-div[data-testid="stDownloadButton"] button,
-div[data-testid="stExpander"] div[data-testid="stDownloadButton"] button {
-  background: linear-gradient(135deg, #6a5acd, #8a2be2) !important;
-  color: #ffffff !important;
-  border: none !important;
-  border-radius: 10px !important;
-}
-
-div[data-testid="stDownloadButton"] button:hover,
-div[data-testid="stExpander"] div[data-testid="stDownloadButton"] button:hover {
-  filter: brightness(1.08);
-}
-
-h2.stage-title{
-  white-space: nowrap !important;                 /* บังคับไม่ให้ขึ้นบรรทัดใหม่ */
-  font-size: clamp(1.3rem, 2.6vw, 2.1rem) !important;  /* ปรับขนาดให้พอดีหน้าจอ */
-  line-height: 1.2 !important;
-}
-a.home-link-btn{
-  display:inline-block;
-  background: linear-gradient(135deg, #6a5acd, #8a2be2);
-  color:#fff !important;
-  text-decoration:none !important;
-  padding: 0.6rem 1.2rem;
-  border-radius: 10px;
-  border: 2px solid #9b5cff;
-  font-weight: 600;
-}
-
-a.home-link-btn:hover{
-  filter: brightness(1.08);
-  transform: scale(1.02);
-}
-
-/* Number input ให้โทนเข้มเหมือน TextInput */
-div[data-testid="stNumberInput"] input {
-  background-color: #181825 !important;
-  color: #ffffff !important;
-  border: 1px solid #6a5acd !important;
-  border-radius: 10px !important;
-}
-
-/* ปุ่ม +/- ของ number input ให้เข้มขึ้น (กันปุ่มขาว) */
-div[data-testid="stNumberInput"] button {
+div[data-testid="stNumberInput"] button{
   background-color: #1e1e2e !important;
-  color: #ffffff !important;
+  color: var(--text) !important;
   border: 1px solid #2a2d3a !important;
 }
-div[data-testid="stAlert"]{
-  padding: 0.5rem 0.8rem !important;
-  margin-top: 0.4rem !important;
-  margin-bottom: 0.8rem !important;
+
+/* -------- BUTTONS (กันปุ่มขาว) -------- */
+.stButton > button,
+.stDownloadButton > button,
+div[data-testid="stDownloadButton"] button,
+button[kind="primary"], button[kind="secondary"]{
+  background: linear-gradient(135deg, var(--primary), var(--primary2)) !important;
+  color: #ffffff !important;
+  border: 2px solid var(--accent) !important;
+  border-radius: 10px !important;
+  padding: 0.6rem 1.2rem !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 10px 24px rgba(106,90,205,.25) !important;
+  transition: 0.2s ease;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover,
+div[data-testid="stDownloadButton"] button:hover{
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* -------- EXPANDER (กันพื้นขาว) -------- */
+div[data-testid="stExpander"]{ background: transparent !important; }
+div[data-testid="stExpander"] details,
+div[data-testid="stExpander"] details > summary,
+div[data-testid="stExpander"] details > summary > div{
+  background-color: var(--panel2) !important;
+  border: 1px solid var(--primary) !important;
+  border-radius: 12px !important;
+}
+div[data-testid="stExpander"] summary,
+div[data-testid="stExpander"] summary *{ color: var(--text) !important; }
+div[data-testid="stExpander"] div[role="region"],
+div[data-testid="stExpander"] div[role="region"] > div{
+  background-color: var(--panel2) !important;
+  color: var(--text) !important;
+  border-top: 1px solid #2a2d3a !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  padding: 0.75rem 1rem !important;
+}
+
+/* -------- DATAFRAME -------- */
+[data-testid="stDataFrame"]{
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow) !important;
+  overflow: hidden !important;
+}
+
+/* =====================================================
+   ✅ KPI Cards (แบบในภาพตัวอย่าง)
+===================================================== */
+.kpi-grid{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 1200px){
+  .kpi-grid{ grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px){
+  .kpi-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-box{
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid rgba(155,92,255,0.35);
+  border-radius: 16px;
+  padding: 18px 18px 14px 18px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+  position: relative;
+}
+.kpi-box::before{
+  content:"";
+  position:absolute;
+  top:0; left:0; right:0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    rgba(155,92,255,0.0),
+    rgba(155,92,255,0.55),
+    rgba(155,92,255,0.0)
+  );
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  opacity: .55;
+}
+
+.kpi-title{
+  font-size: .98rem;
+  opacity: .80;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.kpi-value{
+  font-size: 2.0rem;
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: .2px;
+}
+.kpi-sub{
+  margin-top: 10px;
+  font-size: .90rem;
+  opacity: .70;
+}
+
+hr{
+  border:0;
+  border-top:1px solid rgba(255,255,255,.08);
+  margin: 10px 0 18px 0;
 }
