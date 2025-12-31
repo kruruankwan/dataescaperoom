@@ -27,7 +27,6 @@ ASSETS = Path("assets")
 SFX_SUCCESS = str(ASSETS / "sfx_success.mp3")
 SFX_FAIL = str(ASSETS / "sfx_fail.mp3")
 
-
 # -------------------------------------------------
 # HELPERS
 # -------------------------------------------------
@@ -36,11 +35,9 @@ def format_time(sec: int) -> str:
     s = sec % 60
     return f"{m} นาที {s} วินาที"
 
-
 def play_sound_autoplay(path_str: str):
     """
     เล่นเสียงแบบ autoplay โดยไม่แสดงแถบ player
-    path_str รับเป็น string ได้เลย เช่น "assets/sfx_success.mp3"
     """
     path = Path(path_str)
     if not path.exists():
@@ -49,12 +46,22 @@ def play_sound_autoplay(path_str: str):
 
     b64 = base64.b64encode(path.read_bytes()).decode("utf-8")
     html = f"""
-    <audio autoplay>
+    <audio autoplay="true">
         <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
     </audio>
     """
     components.html(html, height=0)
 
+def schedule_sound(path_str: str):
+    """คิวเสียงให้เล่นในรอบ rerun ถัดไป (กันเสียงไม่ดังเพราะ rerun เร็ว)"""
+    st.session_state.sound_queue = path_str
+
+def flush_sound_queue():
+    """ถ้ามีคิวเสียง ให้เล่นครั้งเดียวแล้วล้างคิว"""
+    q = st.session_state.get("sound_queue", "")
+    if q:
+        play_sound_autoplay(q)
+        st.session_state.sound_queue = ""
 
 def download_csv_button(path: str, label: str):
     p = Path(path)
@@ -67,7 +74,6 @@ def download_csv_button(path: str, label: str):
         )
     else:
         st.warning(f"ไม่พบไฟล์สำหรับดาวน์โหลด: {path}")
-
 
 def log_to_sheet(group, room, stage, answer, result, time_used=""):
     payload = {
@@ -88,14 +94,11 @@ def log_to_sheet(group, room, stage, answer, result, time_used=""):
         st.error(f"บันทึกลงชีตไม่สำเร็จ: {e}")
         return False
 
-
 def reset_answer(stage: int):
     st.session_state.pop(f"answer_{stage}", None)
 
-
 def unlock_badge(stage: int):
     st.session_state.badges.add(stage)
-
 
 def stage_card(title: str, mission_html: str, image_file: str):
     st.markdown(f"""
@@ -111,17 +114,28 @@ def stage_card(title: str, mission_html: str, image_file: str):
     else:
         st.warning(f"ไม่พบรูป: assets/{image_file}")
 
-
-def auto_next_stage(next_stage: int, delay_sec: float = 1.2):
-    """
-    ไปด่านถัดไปอัตโนมัติหลังหน่วงเวลา
-    (ให้เสียงเริ่มเล่น + ให้ balloons แสดงก่อน)
-    """
-    time.sleep(delay_sec)
+def go_stage(next_stage: int):
+    """ไปด่านถัดไปทันที (ใช้คู่กับ auto-nav)"""
     reset_answer(next_stage)
     st.session_state.stage = next_stage
-    st.rerun()
 
+def auto_nav(next_stage: int, delay_ms: int = 1200):
+    """
+    หน่วงเวลาแบบไม่บล็อก (ไม่ใช้ time.sleep)
+    หลัง delay จะ rerun ไปด่านถัดไปอัตโนมัติ
+    """
+    st.session_state.pending_next_stage = next_stage
+    st.session_state.pending_nav_ms = delay_ms
+    components.html(
+        f"""
+        <script>
+        setTimeout(function(){{
+            window.parent.location.reload();
+        }}, {delay_ms});
+        </script>
+        """,
+        height=0
+    )
 
 HINTS = {
     1: "ใบ้: ดูคอลัมน์ Sales แล้วหา “ค่ามากที่สุด” (max).",
@@ -131,7 +145,6 @@ HINTS = {
     5: "ใบ้: ดูคอลัมน์ HoursUsed แล้วหา “ค่าเฉลี่ย” และปัดทศนิยม 2 ตำแหน่ง (mean + round).",
 }
 
-
 def hint_block(stage: int):
     c1, c2 = st.columns([1, 3])
     with c1:
@@ -140,7 +153,6 @@ def hint_block(stage: int):
     with c2:
         if stage in st.session_state.hints_used:
             st.info(HINTS.get(stage, ""))
-
 
 def summary_page():
     st.markdown("""
@@ -166,7 +178,6 @@ def summary_page():
                 st.caption(f"ด่าน {i}")
 
     st.markdown("---")
-
     if st.button("🔄 เล่นใหม่อีกครั้ง"):
         st.session_state.stage = 0
         st.session_state.start_time = None
@@ -175,10 +186,12 @@ def summary_page():
         st.session_state.completed_seconds = 0
         st.session_state.badges = set()
         st.session_state.hints_used = set()
+        st.session_state.pending_next_stage = None
+        st.session_state.pending_nav_ms = 0
+        st.session_state.sound_queue = ""
         for i in range(1, 6):
             reset_answer(i)
         st.rerun()
-
 
 # -------------------------------------------------
 # SESSION STATE
@@ -202,6 +215,24 @@ if "badges" not in st.session_state:
 if "hints_used" not in st.session_state:
     st.session_state.hints_used = set()
 
+# ใหม่: ระบบ auto-nav + queue sound
+if "pending_next_stage" not in st.session_state:
+    st.session_state.pending_next_stage = None
+if "pending_nav_ms" not in st.session_state:
+    st.session_state.pending_nav_ms = 0
+if "sound_queue" not in st.session_state:
+    st.session_state.sound_queue = ""
+
+# -------------------------------------------------
+# ถ้ามี pending_next_stage (จากรอบก่อน) ให้ไปด่านถัดไปทันที
+# -------------------------------------------------
+if st.session_state.pending_next_stage is not None:
+    nxt = st.session_state.pending_next_stage
+    st.session_state.pending_next_stage = None
+    go_stage(nxt)
+
+# เล่นเสียงค้าง (จากรอบก่อน) ให้เสร็จก่อน
+flush_sound_queue()
 
 # -------------------------------------------------
 # SIDEBAR
@@ -235,7 +266,6 @@ with st.sidebar:
     if mascot.exists():
         st.image(str(mascot), use_container_width=True)
 
-
 # -------------------------------------------------
 # HEADER
 # -------------------------------------------------
@@ -248,7 +278,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # -------------------------------------------------
 # PAGE 0 — INPUT INFO
 # -------------------------------------------------
@@ -260,6 +289,7 @@ if st.session_state.stage == 0:
             <li>มีทั้งหมด 5 ด่าน</li>
             <li>แต่ละด่านใช้ไฟล์ CSV จริง</li>
             <li>ตอบถูก → ได้เหรียญ → ไปด่านถัดไปอัตโนมัติ</li>
+            <li><b>กด Enter</b> เพื่อส่งคำตอบได้</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -279,10 +309,12 @@ if st.session_state.stage == 0:
             st.session_state.completed_seconds = 0
             st.session_state.badges = set()
             st.session_state.hints_used = set()
+            st.session_state.pending_next_stage = None
+            st.session_state.pending_nav_ms = 0
+            st.session_state.sound_queue = ""
             for i in range(1, 6):
                 reset_answer(i)
             st.rerun()
-
 
 # -------------------------------------------------
 # STAGE 1
@@ -300,22 +332,24 @@ elif st.session_state.stage == 1:
         download_csv_button("1_sales_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 1")
 
     correct = df["Sales"].max()
-    user = st.number_input("กรอกคำตอบ", step=1, key="answer_1")
 
-    if st.button("ตรวจคำตอบ", key="check_1"):
+    with st.form("form_stage_1", clear_on_submit=False):
+        user = st.number_input("กรอกคำตอบ", step=1, key="answer_1")
+        submitted = st.form_submit_button("ตรวจคำตอบ")
+
+    if submitted:
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 1, user, result)
 
         if result == "ถูกต้อง":
             unlock_badge(1)
-            play_sound_autoplay(SFX_SUCCESS)
+            schedule_sound(SFX_SUCCESS)
             st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
             st.balloons()
-            auto_next_stage(2, delay_sec=1.2)
+            auto_nav(2, delay_ms=1200)
         else:
-            play_sound_autoplay(SFX_FAIL)
+            schedule_sound(SFX_FAIL)
             st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
-
 
 # -------------------------------------------------
 # STAGE 2
@@ -333,22 +367,24 @@ elif st.session_state.stage == 2:
         download_csv_button("2_exercise_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 2")
 
     correct = df["ExerciseMinutes"].min()
-    user = st.number_input("กรอกคำตอบ", step=1, key="answer_2")
 
-    if st.button("ตรวจคำตอบ", key="check_2"):
+    with st.form("form_stage_2", clear_on_submit=False):
+        user = st.number_input("กรอกคำตอบ", step=1, key="answer_2")
+        submitted = st.form_submit_button("ตรวจคำตอบ")
+
+    if submitted:
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 2, user, result)
 
         if result == "ถูกต้อง":
             unlock_badge(2)
-            play_sound_autoplay(SFX_SUCCESS)
+            schedule_sound(SFX_SUCCESS)
             st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
             st.balloons()
-            auto_next_stage(3, delay_sec=1.2)
+            auto_nav(3, delay_ms=1200)
         else:
-            play_sound_autoplay(SFX_FAIL)
+            schedule_sound(SFX_FAIL)
             st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
-
 
 # -------------------------------------------------
 # STAGE 3
@@ -366,22 +402,24 @@ elif st.session_state.stage == 3:
         download_csv_button("3_electricity_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 3")
 
     correct = df["Units"].max()
-    user = st.number_input("กรอกคำตอบ", step=1, key="answer_3")
 
-    if st.button("ตรวจคำตอบ", key="check_3"):
+    with st.form("form_stage_3", clear_on_submit=False):
+        user = st.number_input("กรอกคำตอบ", step=1, key="answer_3")
+        submitted = st.form_submit_button("ตรวจคำตอบ")
+
+    if submitted:
         result = "ถูกต้อง" if abs(user - correct) < 0.01 else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 3, user, result)
 
         if result == "ถูกต้อง":
             unlock_badge(3)
-            play_sound_autoplay(SFX_SUCCESS)
+            schedule_sound(SFX_SUCCESS)
             st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
             st.balloons()
-            auto_next_stage(4, delay_sec=1.2)
+            auto_nav(4, delay_ms=1200)
         else:
-            play_sound_autoplay(SFX_FAIL)
+            schedule_sound(SFX_FAIL)
             st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
-
 
 # -------------------------------------------------
 # STAGE 4
@@ -399,22 +437,24 @@ elif st.session_state.stage == 4:
         download_csv_button("4_web_traffic_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 4")
 
     correct = df["Visitors"].min()
-    user = st.number_input("กรอกจำนวนคน", step=1, key="answer_4")
 
-    if st.button("ตรวจคำตอบ", key="check_4"):
+    with st.form("form_stage_4", clear_on_submit=False):
+        user = st.number_input("กรอกจำนวนคน", step=1, key="answer_4")
+        submitted = st.form_submit_button("ตรวจคำตอบ")
+
+    if submitted:
         result = "ถูกต้อง" if user == correct else "ผิด"
         log_to_sheet(st.session_state.group_name, st.session_state.room, 4, user, result)
 
         if result == "ถูกต้อง":
             unlock_badge(4)
-            play_sound_autoplay(SFX_SUCCESS)
+            schedule_sound(SFX_SUCCESS)
             st.success("🎉 ถูกต้อง! กำลังไปด่านถัดไป…")
             st.balloons()
-            auto_next_stage(5, delay_sec=1.2)
+            auto_nav(5, delay_ms=1200)
         else:
-            play_sound_autoplay(SFX_FAIL)
+            schedule_sound(SFX_FAIL)
             st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
-
 
 # -------------------------------------------------
 # STAGE 5
@@ -432,9 +472,12 @@ elif st.session_state.stage == 5:
         download_csv_button("5_internet_survey_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
 
     correct = round(df["HoursUsed"].mean(), 2)
-    user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f", key="answer_5")
 
-    if st.button("ตรวจคำตอบ", key="check_5"):
+    with st.form("form_stage_5", clear_on_submit=False):
+        user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f", key="answer_5")
+        submitted = st.form_submit_button("ตรวจคำตอบ")
+
+    if submitted:
         finish = time.time()
         total_sec = int(finish - st.session_state.start_time)
         formatted = format_time(total_sec)
@@ -452,26 +495,21 @@ elif st.session_state.stage == 5:
 
         if result == "ถูกต้อง":
             unlock_badge(5)
-            play_sound_autoplay(SFX_SUCCESS)
+            schedule_sound(SFX_SUCCESS)
             st.success("🎉 ถูกต้อง! ผ่านครบทุกด่านแล้ว 🎉 กำลังไปหน้าสรุป…")
             st.balloons()
 
-            # บันทึกเวลาจบเกม
             st.session_state.completed_seconds = total_sec
             st.session_state.completed_time = formatted
             st.session_state.game_completed = True
 
-            # ไปหน้า Summary (Stage 6)
-            auto_next_stage(6, delay_sec=1.3)
-
+            auto_nav(6, delay_ms=1300)
         else:
-            play_sound_autoplay(SFX_FAIL)
+            schedule_sound(SFX_FAIL)
             st.error("❌ คำตอบผิด ลองใหม่อีกครั้ง")
-
 
 # -------------------------------------------------
 # SUMMARY PAGE (STAGE 6)
 # -------------------------------------------------
 elif st.session_state.stage == 6:
     summary_page()
-
