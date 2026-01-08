@@ -300,9 +300,9 @@ elif st.session_state.stage == 1:
     )
     hint_block(1)
 
-    df = pd.read_csv("1_sales_50.csv")
+    df = pd.read_csv("1sales.csv")
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
-        download_csv_button("1_sales_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 1")
+        download_csv_button("1sales.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 1")
 
     correct = df["Sales"].max()
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_1")
@@ -333,9 +333,9 @@ elif st.session_state.stage == 2:
     )
     hint_block(2)
 
-    df = pd.read_csv("2_exercise_50.csv")
+    df = pd.read_csv("2exercise.csv")
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
-        download_csv_button("2_exercise_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 2")
+        download_csv_button("2exercise.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 2")
 
     correct = df["ExerciseMinutes"].min()
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_2")
@@ -366,9 +366,9 @@ elif st.session_state.stage == 3:
     )
     hint_block(3)
 
-    df = pd.read_csv("3_electricity_50.csv")
+    df = pd.read_csv("3electricity.csv")
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
-        download_csv_button("3_electricity_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 3")
+        download_csv_button("3electricity.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 3")
 
     correct = df["Units"].max()
     user = st.number_input("กรอกคำตอบ", step=1, key="answer_3")
@@ -399,9 +399,9 @@ elif st.session_state.stage == 4:
     )
     hint_block(4)
 
-    df = pd.read_csv("4_web_traffic_50.csv")
+    df = pd.read_csv("4web.csv")
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
-        download_csv_button("4_web_traffic_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 4")
+        download_csv_button("4web.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 4")
 
     correct = df["Visitors"].min()
     user = st.number_input("กรอกจำนวนคน", step=1, key="answer_4")
@@ -432,9 +432,9 @@ elif st.session_state.stage == 5:
     )
     hint_block(5)
 
-    df = pd.read_csv("5_internet_survey_50.csv")
+    df = pd.read_csv("5internet.csv")
     with st.expander("📁 ดาวน์โหลดไฟล์ CSV ของด่านนี้"):
-        download_csv_button("5_internet_survey_50.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
+        download_csv_button("5internet.csv", "📥 ดาวน์โหลดไฟล์ด่านที่ 5")
 
     correct = round(df["HoursUsed"].mean(), 2)
     user = st.number_input("กรอกคำตอบ เช่น 3.89", format="%.2f", key="answer_5")
@@ -479,5 +479,6 @@ elif st.session_state.stage == 5:
 # -------------------------------------------------
 elif st.session_state.stage == 6:
     summary_page()
+
 
 
